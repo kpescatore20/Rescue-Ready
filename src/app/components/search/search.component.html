@@ -1,0 +1,25 @@
+<div class="search">
+  <div class="controls">
+    <input placeholder="Search make/model/year" [(ngModel)]="query" />
+    <button (click)="onSearch()">Search</button>
+
+    <label>Battery:</label>
+    <select [(ngModel)]="selectedBatteryLocation" (change)="applyFilters()">
+      <option>All</option>
+      <option *ngFor="let b of batteryLocations">{{b}}</option>
+    </select>
+
+    <label>Roof:</label>
+    <select [(ngModel)]="selectedRoofStrength" (change)="applyFilters()">
+      <option>All</option>
+      <option *ngFor="let r of roofStrengths">{{r}}</option>
+    </select>
+  </div>
+
+  <ul>
+    <li *ngFor="let v of displayedVehicles">
+      <a [routerLink]="['/detail', v.id]">{{v.make}} {{v.model}} ({{v.year}})</a>
+      <div class="meta">Rating: {{v.crashTestRating}} • Fuel: {{v.fuelType}}</div>
+    </li>
+  </ul>
+</div>

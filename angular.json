@@ -1,0 +1,31 @@
+{
+  "$schema": "https://angular.io/config/master/angular.json",
+  "version": 1,
+  "projects": {
+    "rescue-ready": {
+      "projectType": "application",
+      "root": "src",
+      "sourceRoot": "src",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/rescue-ready",
+            "index": "src/index.html",
+            "main": "src/main.ts",
+            "polyfills": "src/polyfills.ts",
+            "tsConfig": "tsconfig.app.json",
+            "assets": ["src/assets"],
+            "styles": ["src/styles.scss"],
+            "scripts": []
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": { "browserTarget": "rescue-ready:build" }
+        }
+      }
+    }
+  },
+  "defaultProject": "rescue-ready"
+}

@@ -1,0 +1,10 @@
+<div *ngIf="vehicle" class="detail">
+  <h2>{{vehicle.make}} {{vehicle.model}} ({{vehicle.year}})</h2>
+  <p><strong>Crash Rating:</strong> {{vehicle.crashTestRating}}</p>
+  <p><strong>Fuel:</strong> {{vehicle.fuelType}}</p>
+  <p *ngIf="vehicle.highVoltageBattery"><strong>Battery:</strong> High-voltage — {{vehicle.batteryLocation}}</p>
+  <p *ngIf="vehicle.extricationNotes"><strong>Extrication:</strong> {{vehicle.extricationNotes}}</p>
+  <p *ngIf="vehicle.rescueSheetLink"><a [href]="vehicle.rescueSheetLink" target="_blank">Open Rescue Sheet</a></p>
+  <p><button (click)="printRescueSheet()">Print Rescue Sheet</button></p>
+</div>
+<div *ngIf="!vehicle">Vehicle not found.</div>

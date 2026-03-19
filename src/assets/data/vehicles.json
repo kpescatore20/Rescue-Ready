@@ -1,0 +1,47 @@
+[
+  {
+    "id": "v1",
+    "make": "Ford",
+    "model": "Explorer",
+    "year": 2022,
+    "crashTestRating": 5,
+    "doorCount": 4,
+    "fuelType": "Gasoline",
+    "highVoltageBattery": false,
+    "batteryLocation": null,
+    "extricationNotes": "Standard B-pillar, fuel tank behind rear axle. Airbag modules front and side.",
+    "roofStrength": "Good",
+    "rescueSheetLink": "https://example.com/rescue/ford-explorer-2022.pdf",
+    "images": []
+  },
+  {
+    "id": "v2",
+    "make": "Tesla",
+    "model": "Model 3",
+    "year": 2021,
+    "crashTestRating": 5,
+    "doorCount": 4,
+    "fuelType": "Electric",
+    "highVoltageBattery": true,
+    "batteryLocation": "Underbody center",
+    "extricationNotes": "High-voltage battery underfloor — cut lines at designated points, disable 12V and wait 2 minutes before cutting.",
+    "roofStrength": "Excellent",
+    "rescueSheetLink": "https://example.com/rescue/tesla-model3-2021.pdf",
+    "images": []
+  },
+  {
+    "id": "v3",
+    "make": "Honda",
+    "model": "Civic",
+    "year": 2019,
+    "crashTestRating": 4,
+    "doorCount": 4,
+    "fuelType": "Gasoline",
+    "highVoltageBattery": false,
+    "batteryLocation": "Engine bay (12V)",
+    "extricationNotes": "Compact engine bay; airbags deploy modules at A-pillar and dash.",
+    "roofStrength": "Fair",
+    "rescueSheetLink": null,
+    "images": []
+  }
+]
