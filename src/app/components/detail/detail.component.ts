@@ -49,4 +49,31 @@ export class DetailComponent implements OnInit {
     w.focus();
     w.print();
   }
+
+  isImage(val: any): boolean {
+    if (!val || typeof val !== 'string') return false;
+    return /\.(jpe?g|png|gif|bmp|webp)(\?|$)/i.test(val) || /imgur\.com|photos\.google|\.aws\.amazonaws\.com/i.test(val);
+  }
+
+  isVideo(val: any): boolean {
+    if (!val || typeof val !== 'string') return false;
+    return /\.(mp4|webm|ogg)(\?|$)/i.test(val) || /youtube\.com|youtu\.be|vimeo\.com/i.test(val);
+  }
+
+  isUrl(val: any): boolean {
+    if (!val || typeof val !== 'string') return false;
+    return /^https?:\/\//i.test(val);
+  }
+
+  isExternalVideoService(val: any): boolean {
+    if (!val || typeof val !== 'string') return false;
+    return /youtube\.com|youtu\.be|vimeo\.com/i.test(val);
+  }
+
+  // Safely coerce to array for *ngFor
+  getArray(val: any): any[] {
+    if (!val && val !== 0) return [];
+    if (Array.isArray(val)) return val;
+    return [val];
+  }
 }

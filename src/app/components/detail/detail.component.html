@@ -1,4 +1,5 @@
 <div *ngIf="vehicle" class="detail">
+  <p><button class="back-btn" routerLink="/search">Back</button></p>
   <h2>{{vehicle.make}} {{vehicle.model}} ({{vehicle.year}})</h2>
   <p><strong>Crash Rating:</strong> {{vehicle.crashTestRating}}</p>
   <p><strong>Fuel:</strong> {{vehicle.fuelType}}</p>
@@ -6,5 +7,17 @@
   <p *ngIf="vehicle.extricationNotes"><strong>Extrication:</strong> {{vehicle.extricationNotes}}</p>
   <p *ngIf="vehicle.rescueSheetLink"><a [href]="vehicle.rescueSheetLink" target="_blank">Open Rescue Sheet</a></p>
   <p><button (click)="printRescueSheet()">Print Rescue Sheet</button></p>
+
+  <div *ngIf="vehicle.images && vehicle.images.length" class="vehicle-media">
+    <h4>Images & Videos</h4>
+      <div class="media-row">
+      <ng-container *ngFor="let url of getArray(vehicle.images)">
+        <img *ngIf="isImage(url)" [src]="url" alt="vehicle image" class="thumb" />
+        <video *ngIf="isVideo(url) && !isExternalVideoService(url)" [src]="url" controls class="thumb-video"></video>
+        <a *ngIf="!isImage(url) && !isVideo(url) && isUrl(url)" [href]="url" target="_blank">{{url}}</a>
+        <div *ngIf="!isUrl(url) && !isImage(url) && !isVideo(url)">{{url}}</div>
+      </ng-container>
+    </div>
+  </div>
 </div>
 <div *ngIf="!vehicle">Vehicle not found.</div>

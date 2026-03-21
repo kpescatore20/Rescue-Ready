@@ -1,2 +1,13 @@
-.detail { max-width: 800px; margin: 0 auto; }
-.detail h2 { margin-bottom: 8px; }
+.detail { max-width: 820px; margin: 0 auto; padding: 12px; }
+.detail h2 { margin-bottom: 12px; font-size: 1.6rem; color:#ffb27a; text-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+.detail p { font-size: 1.05rem; line-height: 1.4; color:#e6eef8; }
+.detail a { color: #ffdba3; font-weight:600; }
+.detail button { padding: 12px 18px; font-size: 1.05rem; border-radius:8px; background: linear-gradient(180deg,#ff6b00,#ff4500); color:#fff; border:none; cursor:pointer; }
+
+.back-btn { background: linear-gradient(180deg,#ff6b00,#ff4500); color:#fff; border:none; padding:10px 16px; border-radius:8px; font-size:1.05rem; cursor:pointer; margin-bottom:10px; }
+.back-btn:active { transform: translateY(1px); }
+
+.vehicle-media { margin-top: 12px; }
+.vehicle-media .media-row { display:flex; gap:10px; flex-wrap:wrap; }
+.vehicle-media .thumb { max-width:220px; max-height:140px; border-radius:6px; }
+.vehicle-media .thumb-video { max-width:320px; max-height:220px; border-radius:6px; }

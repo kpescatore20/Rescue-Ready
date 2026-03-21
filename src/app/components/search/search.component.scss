@@ -1,6 +1,104 @@
-.search { max-width: 800px; margin: 0 auto; }
-.search input { width: 70%; padding: 8px; }
-.search button { padding: 8px 12px; }
-.search ul { list-style: none; padding: 0; }
-.search li { padding: 8px 0; border-bottom: 1px solid #eee; }
-.meta { color: #666; font-size: 0.85rem; }
+.search { max-width: 900px; margin: 0 auto; }
+
+.controls {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	max-width: 520px;
+	margin: 0 auto 20px auto;
+}
+
+.controls label { display:block; font-weight:700; color:#fff; font-size:1.05rem; text-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+
+.controls select,
+.controls input,
+.controls button {
+	width: 100%;
+	font-size: 1.25rem;
+	padding: 14px 18px;
+	border-radius: 8px;
+	border: 1px solid rgba(255,255,255,0.08);
+	box-shadow: none;
+	background: rgba(255,255,255,0.02);
+	color: #f7fafc;
+}
+
+/* VIN input should visually match other inputs (dark background, light text) */
+.controls .vin-input {
+	/* Match the select styling: white background, black text, same border */
+	background: #fff;
+	color: #000;
+	border: 2px solid rgba(0,0,0,0.12);
+	-webkit-appearance: none;
+	appearance: none;
+}
+.controls .vin-input::placeholder { color: #666; }
+
+/* OR separator styling - visible but unobtrusive */
+.controls .or-separator {
+	display: inline-block;
+	margin: 6px 0 0 0;
+	padding: 6px 12px;
+	border-radius: 999px;
+	background: rgba(255,255,255,0.02);
+	color: #ffdba3;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	border: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Disabled controls should look greyed but still legible */
+.controls select:disabled,
+.controls input:disabled {
+	opacity: 0.55;
+	filter: grayscale(15%);
+	cursor: not-allowed;
+}
+
+.controls select { background: #fff; color: #000; border: 2px solid rgba(0,0,0,0.12); -webkit-appearance: menulist; appearance: menulist; }
+.controls select option { background: #fff; color: #000; }
+
+/* stronger focus and selection styles for accessibility */
+.controls select:focus {
+	outline: none;
+	box-shadow: 0 0 0 6px rgba(255,107,0,0.18);
+	border-color: #ff6b00;
+}
+.controls select option:checked,
+.controls select option[selected] {
+	background: #ff6b00;
+	color: #000;
+}
+
+.controls button {
+	background: linear-gradient(180deg,#ff6b00,#ff4500);
+	color: #fff;
+	border: none;
+	cursor: pointer;
+}
+
+.controls button:active { transform: translateY(1px); }
+
+.search ul { list-style: none; padding: 0; margin-top: 8px; }
+.search li { padding: 12px 10px; border-bottom: 1px solid #eee; }
+.search a { font-size: 1.15rem; color:#ffdba3; text-decoration:none; }
+.meta { color: #e2e8f0; font-size: 0.95rem; margin-top:6px; }
+
+.nhtsa { margin-top: 18px; padding: 12px; background: rgba(255,255,255,0.02); border-radius:8px; }
+.nhtsa h3 { color: #ffb27a; margin-top:0; }
+.nhtsa p { color:#e6eef8; margin:6px 0; }
+
+.nhtsa-table { width: 100%; border-collapse: collapse; }
+.nhtsa-table .key { width: 40%; color:#ffdba3; padding:8px; vertical-align: top; font-weight:700; }
+.nhtsa-table .val { color:#e6eef8; padding:8px; vertical-align: top; }
+
+.media-row { display:flex; gap:10px; flex-wrap:wrap; }
+.thumb { max-width:160px; max-height:120px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); }
+.thumb-video { max-width:260px; max-height:160px; border-radius:6px; }
+
+/* Keep controls stacked in a centered column on all screen sizes for glove-friendly layout */
+
+.topbar { display:flex; justify-content:flex-start; margin-bottom:12px; }
+.back-btn { background: linear-gradient(180deg,#ff6b00,#ff4500); color:#fff; border:none; padding:14px 20px; border-radius:8px; font-size:1.15rem; cursor:pointer; }
+.back-btn:active { transform: translateY(1px); }

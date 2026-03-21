@@ -1,0 +1,13 @@
+.home { text-align:center; padding:80px 16px; }
+.home h1 { font-size:56px; margin-bottom:36px; color:#fff; text-shadow: 0 2px 6px rgba(0,0,0,0.8); }
+.home .cta {
+	display:inline-block;
+	padding:28px 48px;
+	background: linear-gradient(180deg,#ff6b00,#ff4500);
+	color:#fff;
+	text-decoration:none;
+	border-radius:12px;
+	font-size:26px;
+	box-shadow: 0 8px 24px rgba(255,107,0,0.18);
+}
+.home .cta:active { transform: translateY(1px); }

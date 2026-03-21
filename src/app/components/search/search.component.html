@@ -1,25 +1,102 @@
 <div class="search">
+  <div class="topbar">
+    <button class="back-btn" routerLink="/">Back</button>
+  </div>
   <div class="controls">
-    <input placeholder="Search make/model/year" [(ngModel)]="query" />
+    <label>VIN:</label>
+    <input class="vin-input" type="text" [value]="vin" (input)="vin = $any($event.target).value" placeholder="Enter VIN for exact vehicle" />
+
+    <div class="or-separator" aria-hidden="true">OR</div>
+
+    <label>Year:</label>
+    <select [value]="year" (change)="year = $any($event.target).value; onYearChange($event)" [disabled]="vin && vin.trim() !== ''">
+      <option>All</option>
+      <option *ngFor="let y of years">{{y}}</option>
+    </select>
+
+    <label>Make:</label>
+    <select [value]="make" (change)="make = $any($event.target).value; onMakeChange()" [disabled]="(vin && vin.trim() !== '') || !year || year === 'All'">
+      <option>All</option>
+      <option *ngFor="let m of makes">{{m}}</option>
+    </select>
+
+    <label>Model:</label>
+    <select [value]="model" (change)="model = $any($event.target).value; onModelChange($event)" [disabled]="(vin && vin.trim() !== '') || !make || make === 'All'">
+      <option *ngFor="let mo of modelOptions">{{mo}}</option>
+    </select>
+
+    <label>Variant:</label>
+    <select [value]="selectedVariantId" (change)="selectedVariantId = $any($event.target).value" [disabled]="(vin && vin.trim() !== '') || !model || model === 'All' || !variants || variants.length === 0">
+      <option [disabled]="true" *ngIf="!variants || variants.length === 0">Select model first</option>
+      <option *ngFor="let v of variants" [value]="v.vehicleId">{{v.description || v.vehicleId}}</option>
+    </select>
+
     <button (click)="onSearch()">Search</button>
-
-    <label>Battery:</label>
-    <select [(ngModel)]="selectedBatteryLocation" (change)="applyFilters()">
-      <option>All</option>
-      <option *ngFor="let b of batteryLocations">{{b}}</option>
-    </select>
-
-    <label>Roof:</label>
-    <select [(ngModel)]="selectedRoofStrength" (change)="applyFilters()">
-      <option>All</option>
-      <option *ngFor="let r of roofStrengths">{{r}}</option>
-    </select>
   </div>
 
-  <ul>
-    <li *ngFor="let v of displayedVehicles">
-      <a [routerLink]="['/detail', v.id]">{{v.make}} {{v.model}} ({{v.year}})</a>
-      <div class="meta">Rating: {{v.crashTestRating}} • Fuel: {{v.fuelType}}</div>
-    </li>
-  </ul>
+  <!-- Search results list removed per request; only dropdowns remain -->
+
+  <section *ngIf="nhtsaResult" class="nhtsa">
+    <h3>NHTSA SafetyRatings</h3>
+    <div *ngIf="nhtsaResult.error">Error: {{nhtsaResult.message}}</div>
+    <div *ngIf="!nhtsaResult.error">
+      <div *ngIf="nhtsaResult.Count === 0">No official ratings found.</div>
+      <div *ngIf="nhtsaMapped && nhtsaMapped.length">
+        <div class="pager-controls">
+          <button (click)="gotoPage(1)" [class.active]="currentPage===1">Overview</button>
+          <button (click)="gotoPage(2)" [class.active]="currentPage===2">Photos/Videos</button>
+          <button (click)="gotoPage(3)" [class.active]="currentPage===3">Remaining Ratings</button>
+        </div>
+
+        <div *ngIf="currentPage===1" class="page overview">
+          <table class="nhtsa-table">
+            <tbody>
+              <tr *ngFor="let kv of overviewItems">
+                <td class="key">{{kv.k}}</td>
+                <td class="val">{{ kv.v === null || kv.v === undefined ? '—' : (kv.v | json) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="currentPage===2" class="page media">
+          <div *ngIf="mediaItems.length; else noMedia">
+            <div *ngFor="let kv of mediaItems" class="media-block">
+              <div class="media-key">{{kv.k}}</div>
+              <div class="media-row">
+                <ng-container *ngFor="let item of getArray(kv.v)">
+                  <img *ngIf="isImage(item)" [src]="item" class="thumb" />
+                  <video *ngIf="isVideo(item)" [src]="item" controls class="thumb-video"></video>
+                  <a *ngIf="!isImage(item) && !isVideo(item) && isUrl(item)" [href]="item" target="_blank">{{item}}</a>
+                  <div *ngIf="!isUrl(item) && !isImage(item) && !isVideo(item)">{{item}}</div>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+          <ng-template #noMedia><div class="no-media">No photos or videos found.</div></ng-template>
+        </div>
+
+        <div *ngIf="currentPage===3" class="page remaining">
+          <table class="nhtsa-table">
+            <tbody>
+              <tr *ngFor="let kv of remainingItems">
+                <td class="key">{{kv.k}}</td>
+                <td class="val">
+                  <ng-container *ngIf="kv.v === null || kv.v === undefined">—</ng-container>
+                  <ng-container *ngIf="kv.v !== null && kv.v !== undefined">
+                    <ng-container *ngIf="isArray(kv.v)">
+                      <div class="list">
+                        <div *ngFor="let item of kv.v">{{ item }}</div>
+                      </div>
+                    </ng-container>
+                    <ng-container *ngIf="!isArray(kv.v)">{{ kv.v }}</ng-container>
+                  </ng-container>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
