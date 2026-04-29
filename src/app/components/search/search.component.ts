@@ -23,6 +23,9 @@ export class SearchComponent implements OnInit {
   selectedVariantId: string | number | null = null;
   vin: string = '';
 
+  // Search method: 'vin' or 'details'
+  searchMethod: 'vin' | 'details' = 'vin';
+
   constructor(private vs: VehicleService, private nhtsa: NhtsaService, private router: Router) {}
 
   ngOnInit(): void {
@@ -410,5 +413,26 @@ export class SearchComponent implements OnInit {
     this.model = 'All';
     this.variants = [];
     this.selectedVariantId = null;
+  }
+
+  setSearchMethod(method: 'vin' | 'details') {
+    this.searchMethod = method;
+    // Reset fields when switching methods
+    if (method === 'vin') {
+      this.year = 'All';
+      this.make = 'All';
+      this.model = 'All';
+      this.selectedVariantId = null;
+    } else {
+      this.vin = '';
+    }
+  }
+
+  isSearchValid(): boolean {
+    if (this.searchMethod === 'vin') {
+      return this.vin.trim().length === 17;
+    } else {
+      return this.year !== 'All' && this.make !== 'All' && this.model !== 'All';
+    }
   }
 }

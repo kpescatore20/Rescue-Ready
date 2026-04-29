@@ -1,42 +1,61 @@
 <div class="results-page">
-  <div class="topbar">
-    <button class="back-btn" (click)="backToSearch()">Back</button>
-    <div class="search-row">
-      <label>Year:</label>
-      <select [value]="year" (change)="onYearChange($event)">
-        <option>All</option>
-        <option *ngFor="let y of years">{{y}}</option>
-      </select>
+  <!-- Simplified Header -->
+  <header class="results-header">
+    <div class="header-actions">
+      <button class="back-btn" (click)="backToSearch()">← Back to Search</button>
+      <button class="print-btn" (click)="generatePrintableReport()">📄 Print Report</button>
+    </div>
 
-      <label>Make:</label>
-      <select [value]="make" (change)="make = $any($event.target).value; onMakeChange();">
-        <option>All</option>
-        <option *ngFor="let m of makes">{{m}}</option>
-      </select>
+    <div class="vehicle-summary">
+      <h1 class="vehicle-title">
+        {{getVehicleDisplayName()}}
+      </h1>
+      <div class="vehicle-meta" *ngIf="vin">
+        <span class="vin-display">VIN: {{vin}}</span>
+      </div>
+    </div>
+  </header>
 
-      <label>Model:</label>
-      <select [value]="model" (change)="onModelChange($event)">
-        <option *ngFor="let mo of modelOptions">{{mo}}</option>
-      </select>
+  <!-- Alerts and Important Info -->
+  <div class="alerts-section" *ngIf="hazardWarnings.length || (make && getManufacturerUrl(make, getVehicleModel()))">
+    <div *ngIf="hazardWarnings.length" class="hazard-alert">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-content">
+        <h4>Safety Hazards Detected</h4>
+        <ul>
+          <li *ngFor="let warning of hazardWarnings">{{warning}}</li>
+        </ul>
+      </div>
+    </div>
 
-      <label>Variant:</label>
-      <select [value]="selectedVariantId" (change)="selectedVariantId = $any($event.target).value" [disabled]="!variants || variants.length === 0">
-        <option [disabled]="true" *ngIf="!variants || variants.length === 0">Select model first</option>
-        <option *ngFor="let v of variants" [value]="v.vehicleId">{{v.description || v.vehicleId}}</option>
-      </select>
-
-      
-
-      <button (click)="onSearch()">Search</button>
+    <div *ngIf="make && getManufacturerUrl(make, getVehicleModel())" class="manufacturer-alert">
+      <div class="alert-icon">📋</div>
+      <div class="alert-content">
+        <h4>Manufacturer Resources</h4>
+        <p>Access official documentation and rescue information:</p>
+        <a [href]="getManufacturerUrl(make, getVehicleModel())" target="_blank" class="manufacturer-link">
+          Visit {{make}} {{getVehicleModel()}} Documentation →
+        </a>
+      </div>
     </div>
   </div>
 
-  <section class="nhtsa">
-    <h3>NHTSA SafetyRatings</h3>
-    <div *ngIf="make && getManufacturerUrl(make, vehicleModel)" class="manufacturer-docs">
-      <a [href]="getManufacturerUrl(make, vehicleModel)" target="_blank" class="doc-link">Visit {{make}} {{vehicleModel}} Page & Documents</a>
+  <!-- Main Results Content -->
+  <section id="results-content" class="results-content">
+    <div class="content-header">
+      <h2>NHTSA Safety Ratings & Vehicle Data</h2>
+      <div class="content-meta" *ngIf="nhtsaResult && !nhtsaResult.error">
+        <span class="rating-count">{{nhtsaResult.Count || 0}} rating{{(nhtsaResult.Count || 0) !== 1 ? 's' : ''}} found</span>
+      </div>
     </div>
-    <div *ngIf="nhtsaResult?.error">Error: {{nhtsaResult?.message}}</div>
+
+    <div *ngIf="nhtsaResult?.error" class="error-message">
+      <div class="error-icon">❌</div>
+      <div class="error-content">
+        <h3>Unable to Load Safety Data</h3>
+        <p>{{nhtsaResult?.message}}</p>
+      </div>
+    </div>
 
     <!-- Local matches removed per user request -->
 
@@ -45,6 +64,7 @@
         <button (click)="gotoPage(1)" [class.active]="currentPage===1">Overview</button>
         <button (click)="gotoPage(2)" [class.active]="currentPage===2">Photos/Videos</button>
         <button (click)="gotoPage(3)" [class.active]="currentPage===3">Remaining Ratings</button>
+        <button (click)="gotoPage(4)" [class.active]="currentPage===4">Rescue Info</button>
       </div>
 
       <div *ngIf="currentPage===1" class="page overview">
@@ -93,6 +113,326 @@
         <ng-template #noRemainingData>
           <div class="no-media">No remaining ratings data found.</div>
         </ng-template>
+      </div>
+
+      <div *ngIf="currentPage===4" class="page rescue">
+        <div class="rescue-content">
+          <!-- Vehicle-Specific Rescue Data -->
+          <div class="rescue-section" *ngIf="getFilteredRescueItems().length">
+            <h3>🚗 Vehicle-Specific Rescue Data</h3>
+            <table class="nhtsa-table">
+              <tbody>
+                <tr *ngFor="let kv of getFilteredRescueItems()">
+                  <td class="key">{{humanizeKey(kv.k)}}</td>
+                  <td class="val">{{ displayValue(kv.v) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Cut Zones and Structural Information -->
+          <div class="rescue-section">
+            <h3>✂️ Cut Zones & Structural Weak Points</h3>
+            <div class="rescue-grid">
+              <div class="rescue-card">
+                <h4>A-Pillar Cut Zones</h4>
+                <p><strong>Safe Zones:</strong> Cut between windshield and door frame, avoiding airbag sensors</p>
+                <p><strong>Risk:</strong> Side curtain airbags deploy from A-pillar</p>
+                <div class="diagram-placeholder">
+                  <div class="diagram-text">🔲 A-Pillar Diagram</div>
+                  <small>Reference manufacturer cut charts</small>
+                </div>
+              </div>
+
+              <div class="rescue-card">
+                <h4>B-Pillar Cut Zones</h4>
+                <p><strong>Safe Zones:</strong> Cut lower third of B-pillar for door removal</p>
+                <p><strong>Risk:</strong> Higher cuts may compromise roof structure</p>
+                <div class="diagram-placeholder">
+                  <div class="diagram-text">🔲 B-Pillar Diagram</div>
+                  <small>Safe cutting zones marked</small>
+                </div>
+              </div>
+
+              <div class="rescue-card">
+                <h4>Roof Rail Cutting</h4>
+                <p><strong>Safe Zones:</strong> Cut along designated roof rails</p>
+                <p><strong>Risk:</strong> Avoid cutting cross-members</p>
+                <div class="diagram-placeholder">
+                  <div class="diagram-text">🔲 Roof Structure</div>
+                  <small>Structural integrity zones</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Door Opening Procedures -->
+          <div class="rescue-section">
+            <h3>🚪 Door Opening Procedures</h3>
+            <div class="rescue-grid">
+              <div class="rescue-card">
+                <h4>Front Doors</h4>
+                <ul>
+                  <li><strong>Standard:</strong> Use door popper tool on post</li>
+                  <li><strong>Power Locks:</strong> Check for battery power</li>
+                  <li><strong>Child Safety:</strong> May prevent rear door opening</li>
+                  <li><strong>Hinges:</strong> Front doors typically hinge rearward</li>
+                </ul>
+              </div>
+
+              <div class="rescue-card">
+                <h4>Rear Doors</h4>
+                <ul>
+                  <li><strong>Standard:</strong> Use door popper on latch mechanism</li>
+                  <li><strong>Child Locks:</strong> Check for child safety locks</li>
+                  <li><strong>Hinges:</strong> Rear doors typically hinge forward</li>
+                  <li><strong>Access:</strong> May require front door removal first</li>
+                </ul>
+              </div>
+
+              <div class="rescue-card">
+                <h4>Hatchback/Trunk</h4>
+                <ul>
+                  <li><strong>Power Release:</strong> Check trunk release button</li>
+                  <li><strong>Emergency Access:</strong> Use trunk through pass-through</li>
+                  <li><strong>Hydraulic:</strong> Use spreaders for jammed mechanisms</li>
+                  <li><strong>Safety:</strong> Check for trunk entrapment sensors</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Towing and Lift Points -->
+          <div class="rescue-section">
+            <h3>🚛 Towing & Lift Points</h3>
+            <div class="rescue-grid">
+              <div class="rescue-card">
+                <h4>Front Tow Points</h4>
+                <ul>
+                  <li><strong>Frame Rails:</strong> Primary attachment points</li>
+                  <li><strong>Engine Cradle:</strong> Heavy-duty lifting point</li>
+                  <li><strong>Avoid:</strong> Suspension components, radiator</li>
+                  <li><strong>Capacity:</strong> Check vehicle GVWR</li>
+                </ul>
+              </div>
+
+              <div class="rescue-card">
+                <h4>Rear Tow Points</h4>
+                <ul>
+                  <li><strong>Rear Axle:</strong> Differential housing</li>
+                  <li><strong>Frame Rails:</strong> Rear section attachment</li>
+                  <li><strong>Avoid:</strong> Fuel tank, exhaust system</li>
+                  <li><strong>Recovery:</strong> Use recovery straps, not chains</li>
+                </ul>
+              </div>
+
+              <div class="rescue-card">
+                <h4>Lift Points</h4>
+                <ul>
+                  <li><strong>Jack Points:</strong> Designated body lift points</li>
+                  <li><strong>Frame Rails:</strong> For heavy lifting</li>
+                  <li><strong>Engine Bay:</strong> Engine cradle for front lift</li>
+                  <li><strong>Safety:</strong> Ensure vehicle stability</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Airbag and Safety Systems -->
+          <div class="rescue-section">
+            <h3>🛡️ Airbag Deployment Zones</h3>
+            <div class="rescue-grid">
+              <div class="rescue-card">
+                <h4>Front Airbags</h4>
+                <ul>
+                  <li><strong>Driver:</strong> Deploys from steering wheel</li>
+                  <li><strong>Passenger:</strong> Deploys from dashboard</li>
+                  <li><strong>Safe Zone:</strong> 12" from deployment areas</li>
+                  <li><strong>Power:</strong> May deploy even without battery</li>
+                </ul>
+                <div class="diagram-placeholder">
+                  <div class="diagram-text">🔲 Front Airbag Zones</div>
+                  <small>Keep clear of deployment paths</small>
+                </div>
+              </div>
+
+              <div class="rescue-card">
+                <h4>Side Curtain Airbags</h4>
+                <ul>
+                  <li><strong>Location:</strong> Roof rail along side windows</li>
+                  <li><strong>Deployment:</strong> Side impact or rollover</li>
+                  <li><strong>Safe Zone:</strong> 18" from roof rail</li>
+                  <li><strong>Duration:</strong> May stay inflated 5-10 seconds</li>
+                </ul>
+                <div class="diagram-placeholder">
+                  <div class="diagram-text">🔲 Side Curtain Coverage</div>
+                  <small>Full side protection zones</small>
+                </div>
+              </div>
+
+              <div class="rescue-card">
+                <h4>Side Impact Airbags</h4>
+                <ul>
+                  <li><strong>Location:</strong> Seat backs or door panels</li>
+                  <li><strong>Deployment:</strong> Side impact detection</li>
+                  <li><strong>Safe Zone:</strong> 6" from seat side</li>
+                  <li><strong>Multiple:</strong> May have thorax and head protection</li>
+                </ul>
+                <div class="diagram-placeholder">
+                  <div class="diagram-text">🔲 Side Impact Zones</div>
+                  <small>Seat and door airbag locations</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step-by-Step Extrication Procedures -->
+          <div class="rescue-section">
+            <h3>📋 Step-by-Step Extrication Procedures</h3>
+            <div class="procedure-steps">
+              <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                  <h4>Initial Assessment</h4>
+                  <ul>
+                    <li>Check for hazards (fuel leaks, electrical, chemical)</li>
+                    <li>Assess patient condition and entrapment</li>
+                    <li>Stabilize vehicle if unstable</li>
+                    <li>Disconnect battery if safe to do so</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                  <h4>Gain Access</h4>
+                  <ul>
+                    <li>Try all doors and windows first</li>
+                    <li>Use glass management tools if needed</li>
+                    <li>Consider patient condition for access method</li>
+                    <li>Document all actions taken</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                  <h4>Disentanglement</h4>
+                  <ul>
+                    <li>Remove steering wheel if blocking access</li>
+                    <li>Cut seat belts using proper techniques</li>
+                    <li>Remove door panels or seats as needed</li>
+                    <li>Monitor for airbag deployment risks</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                  <h4>Extrication</h4>
+                  <ul>
+                    <li>Use KED or long board for spinal protection</li>
+                    <li>Coordinate with medical team</li>
+                    <li>Remove through largest possible opening</li>
+                    <li>Maintain manual stabilization</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                  <h4>Vehicle Debris Removal</h4>
+                  <ul>
+                    <li>Remove vehicle from scene safely</li>
+                    <li>Check for additional victims</li>
+                    <li>Document rescue techniques used</li>
+                    <li>Prepare vehicle for towing</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vehicle Diagrams Section -->
+          <div class="rescue-section">
+            <h3>📊 Vehicle Diagrams & Visual References</h3>
+            <div class="diagrams-grid">
+              <div class="diagram-card">
+                <h4>Airbag Deployment Diagram</h4>
+                <div class="diagram-placeholder large">
+                  <div class="diagram-text">🔲 Airbag Locations & Safe Zones</div>
+                  <small>Visual guide for airbag deployment areas</small>
+                </div>
+                <p class="diagram-note">Reference: NHTSA Vehicle Safety Information or Manufacturer Documentation</p>
+              </div>
+
+              <div class="diagram-card">
+                <h4>Structural Cut Points</h4>
+                <div class="diagram-placeholder large">
+                  <div class="diagram-text">🔲 Vehicle Structure & Cut Zones</div>
+                  <small>Safe cutting locations for extrication</small>
+                </div>
+                <p class="diagram-note">Reference: Vehicle Rescue Guidelines or Manufacturer Specifications</p>
+              </div>
+
+              <div class="diagram-card" *ngIf="isElectricVehicle()">
+                <h4>EV Battery & Electrical Systems</h4>
+                <div class="diagram-placeholder large">
+                  <div class="diagram-text">🔲 High Voltage Components</div>
+                  <small>Battery location and electrical hazards</small>
+                </div>
+                <p class="diagram-note">⚠️ High Voltage Risk - Follow EV Rescue Protocols</p>
+              </div>
+
+              <div class="diagram-card" *ngIf="hasFuelSystem()">
+                <h4>Fuel System Layout</h4>
+                <div class="diagram-placeholder large">
+                  <div class="diagram-text">🔲 Fuel Tank & Lines</div>
+                  <small>Fuel system locations and fire risks</small>
+                </div>
+                <p class="diagram-note">Reference: Fuel System Safety Guidelines</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Emergency Contacts & Resources -->
+          <div class="rescue-section">
+            <h3>📞 Emergency Resources</h3>
+            <div class="resources-grid">
+              <div class="resource-card">
+                <h4>Manufacturer Support</h4>
+                <p>Contact {{make}} technical support for specific vehicle rescue procedures</p>
+                <div *ngIf="getManufacturerUrl(make, getVehicleModel())" class="resource-link">
+                  <a [href]="getManufacturerUrl(make, getVehicleModel())" target="_blank">
+                    Visit {{make}} Resources →
+                  </a>
+                </div>
+              </div>
+
+              <div class="resource-card">
+                <h4>NHTSA Resources</h4>
+                <p>Access official vehicle safety and rescue information</p>
+                <div class="resource-link">
+                  <a href="https://www.nhtsa.gov" target="_blank">
+                    NHTSA Website →
+                  </a>
+                </div>
+              </div>
+
+              <div class="resource-card">
+                <h4>Emergency Protocols</h4>
+                <p>Follow local EMS and fire department rescue protocols</p>
+                <div class="resource-note">
+                  <strong>Remember:</strong> Patient care takes priority over vehicle damage
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>

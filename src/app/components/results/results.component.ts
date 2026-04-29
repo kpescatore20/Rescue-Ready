@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { VehicleService } from '../../services/vehicle.service';
 import { NhtsaService } from '../../services/nhtsa.service';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-results',
@@ -25,6 +27,7 @@ export class ResultsComponent implements OnInit {
   overviewItems: Array<{k:string;v:any}> = [];
   mediaItems: Array<{k:string;v:any}> = [];
   remainingItems: Array<{k:string;v:any}> = [];
+  rescueItems: Array<{k:string;v:any}> = [];
 
   // lists for dropdowns
   years: string[] = [];
@@ -42,6 +45,9 @@ export class ResultsComponent implements OnInit {
   airbagSummary: string[] = [];
   // additional overview items derived from VIN decode or other summaries
   overviewExtras: Array<{k:string;v:any}> = [];
+  // rescue-specific data from VIN decode
+  rescueInfo: Array<{k:string;v:any}> = [];
+  hazardWarnings: string[] = [];
 
   constructor(private router: Router, private vs: VehicleService, private nhtsa: NhtsaService) { }
 
@@ -296,7 +302,7 @@ export class ResultsComponent implements OnInit {
   }
 
   gotoPage(n:number) { this.currentPage = n; }
-  backToSearch() { this.router.navigate(['/search']); }
+  backToSearch() { this.router.navigate(['']); }
 
   // Helpers for template
   isImage(val: any): boolean {
@@ -328,16 +334,14 @@ export class ResultsComponent implements OnInit {
     return key.replace(/([a-z])([A-Z])/g, '$1 $2');
   }
 
-  get vehicleId(): string | null {
+  getVehicleModel(): string | null {
     if (!this.nhtsaMapped) return null;
     const item = this.nhtsaMapped.find(kv => kv.k === 'VehicleId');
     return item ? String(item.v) : null;
   }
 
-  get vehicleModel(): string | null {
-    if (!this.nhtsaMapped) return null;
-    const item = this.nhtsaMapped.find(kv => kv.k === 'Model');
-    return item ? String(item.v) : null;
+  getFilteredRescueItems(): Array<{k:string;v:any}> {
+    return this.rescueItems.filter(kv => this.displayValue(kv.v) !== 'N/A');
   }
 
   getManufacturerUrl(make: string, model?: string): string {
@@ -391,19 +395,39 @@ export class ResultsComponent implements OnInit {
   // Parse decoded VIN result to extract airbag-related information into a summary
   parseDecodedVin() {
     this.airbagSummary = [];
+    this.rescueInfo = [];
+    this.hazardWarnings = [];
     if (!this.decodedVinResult || typeof this.decodedVinResult !== 'object') return;
-    const textValues: string[] = [];
+    const airbagValues: string[] = [];
+    const rescueValues: Array<{k:string;v:any}> = [];
     for (const k of Object.keys(this.decodedVinResult)) {
       try {
         const v = this.decodedVinResult[k];
         const key = String(k || '').toLowerCase();
         const sval = (v === null || v === undefined) ? '' : String(v).toLowerCase();
         if (/air ?bag|srs|supplemental restraint|seat belt tensioner|airbagloc|airbag_loc|curtain/i.test(key) || /air ?bag|srs|curtain|side air|front air|knee air/i.test(sval)) {
-          textValues.push(`${k}: ${v}`);
+          airbagValues.push(`${k}: ${v}`);
+        } else if (/fuel|engine|battery|weight|dimension|voltage|hybrid|electric/i.test(key) || /gasoline|diesel|electric|hybrid/i.test(sval)) {
+          rescueValues.push({ k: k, v: v });
+          // Check for hazards
+          if (/fuel.*type.*primary/i.test(key) && /electric/i.test(sval)) {
+            this.hazardWarnings.push('HIGH VOLTAGE BATTERY: This vehicle has a high-voltage electric battery. Do not cut or damage battery components. Evacuate area if damaged.');
+          }
+          if (/fuel.*type.*primary/i.test(key) && /compressed.*natural.*gas|cng/i.test(sval)) {
+            this.hazardWarnings.push('FLAMMABLE GAS: This vehicle uses Compressed Natural Gas (CNG). Avoid sparks and flames near fuel system.');
+          }
+          if (/fuel.*type.*primary/i.test(key) && /hybrid/i.test(sval)) {
+            this.hazardWarnings.push('HYBRID SYSTEM: This vehicle has both electric and gasoline systems. High voltage present - exercise caution.');
+          }
+          if (/battery.*type/i.test(key) && /lithium|lithium-ion/i.test(sval)) {
+            this.hazardWarnings.push('LITHIUM BATTERY: Lithium-ion battery present. Thermal runaway risk if damaged.');
+          }
         }
       } catch (e) { /* ignore per-field errors */ }
     }
-    this.airbagSummary = Array.from(new Set(textValues));
+    this.airbagSummary = Array.from(new Set(airbagValues));
+    this.rescueInfo = rescueValues;
+    this.rescueItems = rescueValues; // for display
     // Build overviewExtras for display on Overview page
     this.overviewExtras = this.airbagSummary.map(s => {
       const parts = String(s).split(':');
@@ -412,6 +436,8 @@ export class ResultsComponent implements OnInit {
       const display = (v === null || v === undefined || String(v).trim() === '') ? 'N/A' : v;
       return { k: k || 'Airbag', v: display };
     });
+    // Add rescue info to overview
+    this.overviewExtras = this.overviewExtras.concat(this.rescueInfo);
   }
 
   // Return a display string for template: 'N/A' for empty/null/empty-array/empty-object, JSON for objects, otherwise string
@@ -428,17 +454,18 @@ export class ResultsComponent implements OnInit {
   // Remaining tab fallback: if partitioning leaves no remaining rows,
   // show all mapped NHTSA rows so the table is never blank when data exists.
   getRemainingItems(): Array<{k:string;v:any}> {
-    if (this.remainingItems && this.remainingItems.length) return this.remainingItems;
-    if (this.nhtsaMapped && this.nhtsaMapped.length) return this.nhtsaMapped;
-    if (this.decodedVinResult && typeof this.decodedVinResult === 'object') {
+    let items: Array<{k:string;v:any}> = [];
+    if (this.remainingItems && this.remainingItems.length) items = this.remainingItems;
+    else if (this.nhtsaMapped && this.nhtsaMapped.length) items = this.nhtsaMapped;
+    else if (this.decodedVinResult && typeof this.decodedVinResult === 'object') {
       const src = (Array.isArray(this.decodedVinResult.Results) && this.decodedVinResult.Results.length)
         ? this.decodedVinResult.Results[0]
         : this.decodedVinResult;
       if (src && typeof src === 'object') {
-        return Object.keys(src).map(k => ({ k, v: (src as any)[k] }));
+        items = Object.keys(src).map(k => ({ k, v: (src as any)[k] }));
       }
     }
-    return [];
+    return items.filter(kv => this.displayValue(kv.v) !== 'N/A');
   }
 
   // return overview items merged with extras (VIN summaries)
@@ -536,7 +563,96 @@ export class ResultsComponent implements OnInit {
       if (meaningful(val)) base.push({ k: 'Trim', v: val });
     }
 
-    return [...base, ...this.overviewItems, ...this.overviewExtras];
+    return [...base, ...this.overviewItems, ...this.overviewExtras].filter(kv => this.displayValue(kv.v) !== 'N/A');
   }
-  
+
+  async generatePrintableReport() {
+    const element = document.getElementById('results-content');
+    if (!element) return;
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    const imgWidth = 210; // A4 width in mm
+    const pageHeight = 295; // A4 height in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    pdf.save('rescue-ready-report.pdf');
+  }
+
+  getVehicleDisplayName(): string {
+    const parts: string[] = [];
+    if (this.year && this.year !== 'All') parts.push(this.year);
+    if (this.make && this.make !== 'All') parts.push(this.make);
+    if (this.model && this.model !== 'All') parts.push(this.model);
+    return parts.length > 0 ? parts.join(' ') : 'Vehicle Information';
+  }
+
+  isElectricVehicle(): boolean {
+    // Check if this is an electric or hybrid vehicle based on available data
+    const fuelTypes = ['electric', 'hybrid', 'battery', 'ev'];
+    const makeModel = `${this.make || ''} ${this.model || ''}`.toLowerCase();
+
+    // Check decoded VIN data for fuel type
+    if (this.decodedVinResult) {
+      const vinData = Array.isArray(this.decodedVinResult.Results)
+        ? this.decodedVinResult.Results[0]
+        : this.decodedVinResult;
+
+      for (const key in vinData) {
+        const value = String(vinData[key]).toLowerCase();
+        if (fuelTypes.some(type => value.includes(type))) {
+          return true;
+        }
+      }
+    }
+
+    // Check make/model for known EV brands
+    const evBrands = ['tesla', 'rivian', 'lucid', 'polestar', 'vinfast'];
+    if (evBrands.some(brand => makeModel.includes(brand))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  hasFuelSystem(): boolean {
+    // Check if vehicle has traditional fuel system (gasoline/diesel)
+    const fuelTypes = ['gasoline', 'diesel', 'petrol', 'fuel', 'tank'];
+
+    if (this.decodedVinResult) {
+      const vinData = Array.isArray(this.decodedVinResult.Results)
+        ? this.decodedVinResult.Results[0]
+        : this.decodedVinResult;
+
+      for (const key in vinData) {
+        const value = String(vinData[key]).toLowerCase();
+        if (fuelTypes.some(type => value.includes(type))) {
+          return true;
+        }
+      }
+    }
+
+    // Assume most vehicles have fuel systems unless proven otherwise
+    return !this.isElectricVehicle();
+  }
 }

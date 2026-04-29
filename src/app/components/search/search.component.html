@@ -1,37 +1,101 @@
 <div class="search">
-  <div class="topbar">
-    <button class="back-btn" routerLink="/">Back</button>
-  </div>
-  <div class="controls">
-    <label>VIN:</label>
-    <input class="vin-input" type="text" [value]="vin" (input)="vin = $any($event.target).value" placeholder="Enter VIN for exact vehicle" />
+  <div class="search-container">
+    <h2 class="search-title">Vehicle Search</h2>
+    <p class="search-subtitle">Enter a VIN for exact match or select vehicle details</p>
 
-    <div class="or-separator" aria-hidden="true">OR</div>
+    <!-- Search Method Tabs -->
+    <div class="search-tabs">
+      <button
+        class="tab-btn"
+        [class.active]="searchMethod === 'vin'"
+        (click)="setSearchMethod('vin')">
+        🔍 Quick VIN Search
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="searchMethod === 'details'"
+        (click)="setSearchMethod('details')">
+        📋 Vehicle Details
+      </button>
+    </div>
 
-    <label>Year:</label>
-    <select [value]="year" (change)="year = $any($event.target).value; onYearChange($event)" [disabled]="vin && vin.trim() !== ''">
-      <option>All</option>
-      <option *ngFor="let y of years">{{y}}</option>
-    </select>
+    <!-- VIN Search Panel -->
+    <div class="search-panel" *ngIf="searchMethod === 'vin'">
+      <div class="vin-section">
+        <label for="vin-input">Vehicle Identification Number (VIN)</label>
+        <input
+          id="vin-input"
+          class="vin-input"
+          type="text"
+          [value]="vin"
+          (input)="vin = $any($event.target).value"
+          placeholder="Enter 17-character VIN"
+          maxlength="17" />
+        <p class="help-text">VIN provides the most accurate vehicle information</p>
+      </div>
+    </div>
 
-    <label>Make:</label>
-    <select [value]="make" (change)="make = $any($event.target).value; onMakeChange()" [disabled]="(vin && vin.trim() !== '') || !year || year === 'All'">
-      <option>All</option>
-      <option *ngFor="let m of makes">{{m}}</option>
-    </select>
+    <!-- Detailed Search Panel -->
+    <div class="search-panel" *ngIf="searchMethod === 'details'">
+      <div class="details-grid">
+        <div class="form-group">
+          <label for="year-select">Year</label>
+          <select
+            id="year-select"
+            [value]="year"
+            (change)="year = $any($event.target).value; onYearChange($event)">
+            <option value="All">Any Year</option>
+            <option *ngFor="let y of years">{{y}}</option>
+          </select>
+        </div>
 
-    <label>Model:</label>
-    <select [value]="model" (change)="model = $any($event.target).value; onModelChange($event)" [disabled]="(vin && vin.trim() !== '') || !make || make === 'All'">
-      <option *ngFor="let mo of modelOptions">{{mo}}</option>
-    </select>
+        <div class="form-group">
+          <label for="make-select">Make</label>
+          <select
+            id="make-select"
+            [value]="make"
+            (change)="make = $any($event.target).value; onMakeChange()"
+            [disabled]="!year || year === 'All'">
+            <option value="All">Any Make</option>
+            <option *ngFor="let m of makes">{{m}}</option>
+          </select>
+        </div>
 
-    <label>Variant:</label>
-    <select [value]="selectedVariantId" (change)="selectedVariantId = $any($event.target).value" [disabled]="(vin && vin.trim() !== '') || !model || model === 'All' || !variants || variants.length === 0">
-      <option [disabled]="true" *ngIf="!variants || variants.length === 0">Select model first</option>
-      <option *ngFor="let v of variants" [value]="v.vehicleId">{{v.description || v.vehicleId}}</option>
-    </select>
+        <div class="form-group">
+          <label for="model-select">Model</label>
+          <select
+            id="model-select"
+            [value]="model"
+            (change)="model = $any($event.target).value; onModelChange($event)"
+            [disabled]="!make || make === 'All'">
+            <option value="All">Any Model</option>
+            <option *ngFor="let mo of modelOptions" [value]="mo">{{mo}}</option>
+          </select>
+        </div>
 
-    <button (click)="onSearch()">Search</button>
+        <div class="form-group" *ngIf="variants && variants.length > 0">
+          <label for="variant-select">Variant</label>
+          <select
+            id="variant-select"
+            [value]="selectedVariantId"
+            (change)="selectedVariantId = $any($event.target).value"
+            [disabled]="!model || model === 'All'">
+            <option value="">Any Variant</option>
+            <option *ngFor="let v of variants" [value]="v.vehicleId">{{v.description || v.vehicleId}}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Button -->
+    <div class="search-actions">
+      <button
+        class="search-btn"
+        (click)="onSearch()"
+        [disabled]="!isSearchValid()">
+        🔍 Search Vehicle
+      </button>
+    </div>
   </div>
 
   <!-- Search results list removed per request; only dropdowns remain -->
