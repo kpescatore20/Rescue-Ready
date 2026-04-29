@@ -323,6 +323,71 @@ export class ResultsComponent implements OnInit {
     return [val];
   }
 
+  humanizeKey(key: string): string {
+    if (!key) return key;
+    return key.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+
+  get vehicleId(): string | null {
+    if (!this.nhtsaMapped) return null;
+    const item = this.nhtsaMapped.find(kv => kv.k === 'VehicleId');
+    return item ? String(item.v) : null;
+  }
+
+  get vehicleModel(): string | null {
+    if (!this.nhtsaMapped) return null;
+    const item = this.nhtsaMapped.find(kv => kv.k === 'Model');
+    return item ? String(item.v) : null;
+  }
+
+  getManufacturerUrl(make: string, model?: string): string {
+    const makeLower = make.toLowerCase();
+    const modelLower = model ? model.toLowerCase().replace(/\s+/g, '-') : '';
+    const urls: { [key: string]: string } = {
+      'toyota': 'https://www.toyota.com',
+      'ford': 'https://www.ford.com',
+      'chevrolet': 'https://www.chevrolet.com',
+      'honda': 'https://www.honda.com',
+      'nissan': 'https://www.nissanusa.com',
+      'bmw': 'https://www.bmwusa.com',
+      'mercedes-benz': 'https://www.mbusa.com',
+      'hyundai': 'https://www.hyundaiusa.com',
+      'kia': 'https://www.kia.com',
+      'subaru': 'https://www.subaru.com',
+      'volkswagen': 'https://www.vw.com',
+      'audi': 'https://www.audiusa.com',
+      'lexus': 'https://www.lexus.com',
+      'mazda': 'https://www.mazdausa.com',
+      'tesla': 'https://www.tesla.com',
+      'dodge': 'https://www.dodge.com',
+      'jeep': 'https://www.jeep.com',
+      'gmc': 'https://www.gmc.com',
+      'volvo': 'https://www.volvocars.com',
+      'mitsubishi': 'https://www.mitsubishicars.com',
+      'chrysler': 'https://www.chrysler.com',
+      'cadillac': 'https://www.cadillac.com'
+    };
+    // Specific model URLs
+    const modelUrls: { [key: string]: string } = {
+      'ford-f-150': 'https://www.ford.com/trucks/f150/',
+      'ford-explorer': 'https://www.ford.com/suvs/explorer/',
+      'ford-focus': 'https://www.ford.com/cars/focus/',
+      'ford-escape': 'https://www.ford.com/suvs/escape/',
+      'ford-mustang': 'https://www.ford.com/cars/mustang/',
+      'toyota-camry': 'https://www.toyota.com/camry/',
+      'toyota-corolla': 'https://www.toyota.com/corolla/',
+      'toyota-rav4': 'https://www.toyota.com/rav4/',
+      'toyota-prius': 'https://www.toyota.com/prius/',
+      'toyota-highlander': 'https://www.toyota.com/highlander/',
+      // Add more as needed
+    };
+    const key = `${makeLower}-${modelLower}`;
+    if (modelUrls[key]) {
+      return modelUrls[key];
+    }
+    return urls[makeLower] || '';
+  }
+
   // Parse decoded VIN result to extract airbag-related information into a summary
   parseDecodedVin() {
     this.airbagSummary = [];
@@ -358,6 +423,22 @@ export class ResultsComponent implements OnInit {
       try { return JSON.stringify(val); } catch { return String(val); }
     }
     return String(val);
+  }
+
+  // Remaining tab fallback: if partitioning leaves no remaining rows,
+  // show all mapped NHTSA rows so the table is never blank when data exists.
+  getRemainingItems(): Array<{k:string;v:any}> {
+    if (this.remainingItems && this.remainingItems.length) return this.remainingItems;
+    if (this.nhtsaMapped && this.nhtsaMapped.length) return this.nhtsaMapped;
+    if (this.decodedVinResult && typeof this.decodedVinResult === 'object') {
+      const src = (Array.isArray(this.decodedVinResult.Results) && this.decodedVinResult.Results.length)
+        ? this.decodedVinResult.Results[0]
+        : this.decodedVinResult;
+      if (src && typeof src === 'object') {
+        return Object.keys(src).map(k => ({ k, v: (src as any)[k] }));
+      }
+    }
+    return [];
   }
 
   // return overview items merged with extras (VIN summaries)

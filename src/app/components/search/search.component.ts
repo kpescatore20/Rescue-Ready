@@ -217,6 +217,17 @@ export class SearchComponent implements OnInit {
     return [val];
   }
 
+  getRemainingItems(): Array<{k:string;v:any}> {
+    if (this.remainingItems && this.remainingItems.length) return this.remainingItems;
+    if (this.nhtsaMapped && this.nhtsaMapped.length) return this.nhtsaMapped;
+    return [];
+  }
+
+  humanizeKey(key: string): string {
+    if (!key) return key;
+    return key.replace(/([a-z])([A-Z])/g, '$1 $2');
+  }
+
   preparePages() {
     this.overviewItems = [];
     this.mediaItems = [];

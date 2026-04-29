@@ -8,8 +8,11 @@
 .search-row button { background: linear-gradient(180deg,#ff6b00,#ff4500); color:#fff; border:none; cursor:pointer; }
 .pill { background: rgba(255,255,255,0.03); color:#fff; padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,0.04); }
 .nhtsa { margin-top: 8px; background: rgba(255,255,255,0.02); padding:12px; border-radius:8px; }
+.manufacturer-docs { margin-bottom: 12px; }
+.doc-link { color: #ffdba3; text-decoration: none; font-weight: 700; padding: 8px 12px; background: rgba(255,255,255,0.04); border-radius: 6px; display: inline-block; }
+.doc-link:hover { background: rgba(255,255,255,0.08); }
 .pager-controls { display:flex; gap:10px; margin-bottom:14px; }
-.pager-controls button { padding:10px 14px; border-radius:8px; border:none; background:rgba(255,255,255,0.04); color:#fff; font-size:1rem; }
+.pager-controls button { padding:10px 14px; border-radius:8px; border:none; background:rgba(255,255,255,0.04); color:#fff; font-size:1.2rem; }
 .pager-controls button.active { background: linear-gradient(180deg,#ff6b00,#ff4500); }
 .nhtsa-table { width:100%; border-collapse:collapse; }
 .nhtsa-table .key { width:36%; color:#ffdba3; padding:8px; vertical-align:top; font-weight:700; }

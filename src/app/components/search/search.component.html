@@ -77,10 +77,10 @@
         </div>
 
         <div *ngIf="currentPage===3" class="page remaining">
-          <table class="nhtsa-table">
+          <table class="nhtsa-table" *ngIf="getRemainingItems().length; else noRemainingData">
             <tbody>
-              <tr *ngFor="let kv of remainingItems">
-                <td class="key">{{kv.k}}</td>
+              <tr *ngFor="let kv of getRemainingItems()">
+                <td class="key">{{humanizeKey(kv.k)}}</td>
                 <td class="val">
                   <ng-container *ngIf="kv.v === null || kv.v === undefined">—</ng-container>
                   <ng-container *ngIf="kv.v !== null && kv.v !== undefined">
@@ -95,6 +95,7 @@
               </tr>
             </tbody>
           </table>
+          <ng-template #noRemainingData><div class="no-media">No remaining ratings data found.</div></ng-template>
         </div>
       </div>
     </div>

@@ -33,6 +33,9 @@
 
   <section class="nhtsa">
     <h3>NHTSA SafetyRatings</h3>
+    <div *ngIf="make && getManufacturerUrl(make, vehicleModel)" class="manufacturer-docs">
+      <a [href]="getManufacturerUrl(make, vehicleModel)" target="_blank" class="doc-link">Visit {{make}} {{vehicleModel}} Page & Documents</a>
+    </div>
     <div *ngIf="nhtsaResult?.error">Error: {{nhtsaResult?.message}}</div>
 
     <!-- Local matches removed per user request -->
@@ -48,7 +51,7 @@
         <table class="nhtsa-table">
           <tbody>
             <tr *ngFor="let kv of getOverviewItems()">
-              <td class="key">{{kv.k}}</td>
+              <td class="key">{{humanizeKey(kv.k)}}</td>
               <td class="val">{{ displayValue(kv.v) }}</td>
             </tr>
           </tbody>
@@ -58,7 +61,7 @@
       <div *ngIf="currentPage===2" class="page media">
         <div *ngIf="mediaItems.length; else noMedia">
           <div *ngFor="let kv of mediaItems" class="media-block">
-            <div class="media-key">{{kv.k}}</div>
+            <div class="media-key">{{humanizeKey(kv.k)}}</div>
             <div class="media-row">
               <ng-container *ngFor="let item of getArray(kv.v)">
                 <img *ngIf="isImage(item)" [src]="item" class="thumb" />
@@ -72,23 +75,23 @@
       </div>
 
       <div *ngIf="currentPage===3" class="page remaining">
-        <div *ngIf="nhtsaResult; else smallRemaining">
-          <h4>Full NHTSA Response</h4>
-          <pre>{{ nhtsaResult | json }}</pre>
-        </div>
-        <div *ngIf="decodedVinResult">
-          <h4>Full VIN Decode</h4>
-          <pre>{{ decodedVinResult | json }}</pre>
-        </div>
-        <ng-template #smallRemaining>
-          <table class="nhtsa-table">
-            <tbody>
-              <tr *ngFor="let kv of remainingItems">
-                <td class="key">{{kv.k}}</td>
-                <td class="val">{{ displayValue(kv.v) }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <table class="nhtsa-table" *ngIf="getRemainingItems().length; else noRemainingData">
+          <thead>
+            <tr>
+              <th class="key">Rating Field</th>
+              <th class="val">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let kv of getRemainingItems()">
+              <td class="key">{{humanizeKey(kv.k)}}</td>
+              <td class="val">{{ displayValue(kv.v) }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ng-template #noRemainingData>
+          <div class="no-media">No remaining ratings data found.</div>
         </ng-template>
       </div>
     </div>
