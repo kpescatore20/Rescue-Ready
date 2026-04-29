@@ -61,61 +61,12 @@
 
     <div *ngIf="!nhtsaResult?.error">
       <div class="pager-controls">
-        <button (click)="gotoPage(1)" [class.active]="currentPage===1">Overview</button>
+        <button (click)="gotoPage(1)" [class.active]="currentPage===1">Rescue Info</button>
         <button (click)="gotoPage(2)" [class.active]="currentPage===2">Photos/Videos</button>
         <button (click)="gotoPage(3)" [class.active]="currentPage===3">Remaining Ratings</button>
-        <button (click)="gotoPage(4)" [class.active]="currentPage===4">Rescue Info</button>
       </div>
 
-      <div *ngIf="currentPage===1" class="page overview">
-        <table class="nhtsa-table">
-          <tbody>
-            <tr *ngFor="let kv of getOverviewItems()">
-              <td class="key">{{humanizeKey(kv.k)}}</td>
-              <td class="val">{{ displayValue(kv.v) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div *ngIf="currentPage===2" class="page media">
-        <div *ngIf="mediaItems.length; else noMedia">
-          <div *ngFor="let kv of mediaItems" class="media-block">
-            <div class="media-key">{{humanizeKey(kv.k)}}</div>
-            <div class="media-row">
-              <ng-container *ngFor="let item of getArray(kv.v)">
-                <img *ngIf="isImage(item)" [src]="item" class="thumb" />
-                <video *ngIf="isVideo(item)" [src]="item" controls class="thumb-video"></video>
-                <a *ngIf="isUrl(item) && !isImage(item) && !isVideo(item)" [href]="item" target="_blank">{{item}}</a>
-              </ng-container>
-            </div>
-          </div>
-        </div>
-        <ng-template #noMedia><div class="no-media">No photos or videos found.</div></ng-template>
-      </div>
-
-      <div *ngIf="currentPage===3" class="page remaining">
-        <table class="nhtsa-table" *ngIf="getRemainingItems().length; else noRemainingData">
-          <thead>
-            <tr>
-              <th class="key">Rating Field</th>
-              <th class="val">Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let kv of getRemainingItems()">
-              <td class="key">{{humanizeKey(kv.k)}}</td>
-              <td class="val">{{ displayValue(kv.v) }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <ng-template #noRemainingData>
-          <div class="no-media">No remaining ratings data found.</div>
-        </ng-template>
-      </div>
-
-      <div *ngIf="currentPage===4" class="page rescue">
+      <div *ngIf="currentPage===1" class="page rescue">
         <div class="rescue-content">
           <!-- Vehicle-Specific Rescue Data -->
           <div class="rescue-section" *ngIf="getFilteredRescueItems().length">
@@ -286,71 +237,16 @@
             </div>
           </div>
 
-          <!-- Step-by-Step Extrication Procedures -->
+          <!-- Step-by-Step Extrication Procedures - Vehicle Specific -->
           <div class="rescue-section">
-            <h3>📋 Step-by-Step Extrication Procedures</h3>
+            <h3>📋 {{year}} {{make}} {{model}} - Specific Extrication Procedures</h3>
             <div class="procedure-steps">
-              <div class="step">
-                <div class="step-number">1</div>
+              <div class="step" *ngFor="let procedureStep of getVehicleSpecificSteps()">
+                <div class="step-number">{{procedureStep.number}}</div>
                 <div class="step-content">
-                  <h4>Initial Assessment</h4>
+                  <h4>{{procedureStep.title}}</h4>
                   <ul>
-                    <li>Check for hazards (fuel leaks, electrical, chemical)</li>
-                    <li>Assess patient condition and entrapment</li>
-                    <li>Stabilize vehicle if unstable</li>
-                    <li>Disconnect battery if safe to do so</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div class="step">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                  <h4>Gain Access</h4>
-                  <ul>
-                    <li>Try all doors and windows first</li>
-                    <li>Use glass management tools if needed</li>
-                    <li>Consider patient condition for access method</li>
-                    <li>Document all actions taken</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div class="step">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                  <h4>Disentanglement</h4>
-                  <ul>
-                    <li>Remove steering wheel if blocking access</li>
-                    <li>Cut seat belts using proper techniques</li>
-                    <li>Remove door panels or seats as needed</li>
-                    <li>Monitor for airbag deployment risks</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div class="step">
-                <div class="step-number">4</div>
-                <div class="step-content">
-                  <h4>Extrication</h4>
-                  <ul>
-                    <li>Use KED or long board for spinal protection</li>
-                    <li>Coordinate with medical team</li>
-                    <li>Remove through largest possible opening</li>
-                    <li>Maintain manual stabilization</li>
-                  </ul>
-                </div>
-              </div>
-
-              <div class="step">
-                <div class="step-number">5</div>
-                <div class="step-content">
-                  <h4>Vehicle Debris Removal</h4>
-                  <ul>
-                    <li>Remove vehicle from scene safely</li>
-                    <li>Check for additional victims</li>
-                    <li>Document rescue techniques used</li>
-                    <li>Prepare vehicle for towing</li>
+                    <li *ngFor="let detail of procedureStep.details">{{detail}}</li>
                   </ul>
                 </div>
               </div>
@@ -434,6 +330,52 @@
           </div>
         </div>
       </div>
+
+      <div *ngIf="currentPage===2" class="page photos">
+        <div class="photos-section">
+          <h3>📸 Photos & Videos</h3>
+          <div class="photos-grid" *ngIf="mediaItems.length; else noMedia">
+            <div class="photo-card" *ngFor="let kv of mediaItems">
+              <div class="media-key">{{humanizeKey(kv.k)}}</div>
+              <div class="media-row">
+                <ng-container *ngFor="let item of getArray(kv.v)">
+                  <img *ngIf="isImage(item)" [src]="item" [alt]="humanizeKey(kv.k)" class="thumb" loading="lazy" />
+                  <video *ngIf="isVideo(item)" [src]="item" controls class="thumb-video"></video>
+                  <a *ngIf="isUrl(item) && !isImage(item) && !isVideo(item)" [href]="item" target="_blank" class="media-link">{{item}}</a>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+          <ng-template #noMedia>
+            <div class="no-photos">
+              <p>No photos or videos available for this vehicle.</p>
+              <p>Check manufacturer website for additional resources.</p>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+
+      <div *ngIf="currentPage===3" class="page ratings">
+        <div class="ratings-section">
+          <h3>📊 Additional Safety Ratings</h3>
+          <table class="nhtsa-table" *ngIf="getRemainingItems().length; else noRemainingData">
+            <tbody>
+              <tr *ngFor="let kv of getRemainingItems()">
+                <td class="key">{{humanizeKey(kv.k)}}</td>
+                <td class="val">{{ displayValue(kv.v) }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <ng-template #noRemainingData>
+            <div class="no-data">
+              <p>No additional ratings data available.</p>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+
+
     </div>
   </section>
 </div>

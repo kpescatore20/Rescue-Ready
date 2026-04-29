@@ -655,4 +655,122 @@ export class ResultsComponent implements OnInit {
     // Assume most vehicles have fuel systems unless proven otherwise
     return !this.isElectricVehicle();
   }
+
+  getVehicleModel(): string {
+    return this.model || '';
+  }
+
+  getVehicleSpecificSteps(): Array<{
+    number: number;
+    title: string;
+    details: string[];
+  }> {
+    const steps: Array<{
+      number: number;
+      title: string;
+      details: string[];
+    }> = [];
+
+    const isEV = this.isElectricVehicle();
+    const hasFuel = this.hasFuelSystem();
+    const yearNum = parseInt(this.year || '0', 10);
+    const vehicleAge = new Date().getFullYear() - yearNum;
+    const vehicleInfo = `${this.year || 'Unknown'} ${this.make || ''} ${this.model || ''}`.trim();
+
+    // STEP 1: Initial Assessment
+    steps.push({
+      number: 1,
+      title: `Initial Assessment - ${vehicleInfo}`,
+      details: [
+        `Scene safety: Check for downed power lines (hazard if ${isEV ? 'EV with damage' : 'standard vehicle'})`,
+        `Vehicle position: Assess rollover risk and ground stability`,
+        `Check for visible damage: ${isEV ? 'Look for battery housing integrity and electrical hazards' : 'Check for fuel leakage, coolant, and mechanical damage'}`,
+        isEV ? `⚠️ HIGH VOLTAGE HAZARD: This is an electric vehicle. Expect high-voltage systems that can remain energized even after power disconnection.` : 
+              hasFuel ? `⚠️ FUEL FIRE HAZARD: Check for fuel leaks before using cutters or high-heat tools.` : 
+              `Stabilize vehicle to prevent movement`,
+        `Patient assessment: Confirm victim(s) location and condition before entry attempt`,
+        `Deploy air bags: Ensure deployed airbags are not re-triggered during extrication`
+      ]
+    });
+
+    // STEP 2: Gain Access
+    steps.push({
+      number: 2,
+      title: `Gain Access - ${this.make || 'Vehicle'} ${this.model || ''}`,
+      details: [
+        `Attempt all doors first: Check for manual override or mechanical release`,
+        `Power locks: ${isEV ? 'May not function if battery is compromised' : 'Try locking mechanism; check for child safety locks'}`,
+        `Window entry: ${vehicleAge > 15 ? 'Manually crank windows if power windows fail' : 'Check for power window controls; may be disabled after accident'}`,
+        isEV ? `Battery cutoff: If accessible and trained, disconnect HV battery to prevent re-energization` : 
+              `Battery disconnect: Disconnect negative battery terminal to prevent electrical fires if cutting required`,
+        `Airbag deployment risk: Keep personnel clear of steering wheel, dashboard, and side panels during entry`,
+        hasFuel && vehicleAge < 10 ? `Fuel smell indicator: Do not use arc cutters if fuel odor detected; use hydraulic tools instead` : '',
+        `Glass management: Use controlled glass removal techniques`
+      ].filter(d => d) // Remove empty strings
+    });
+
+    // STEP 3: Disentanglement & Patient Access
+    steps.push({
+      number: 3,
+      title: `Disentanglement - ${vehicleInfo}`,
+      details: [
+        `Dashboard/steering wheel removal: Needed for ${this.model || 'this vehicle'} to access trapped limbs`,
+        isEV ? `Avoid cutting near battery housing: Battery typically in ${yearNum >= 2015 ? 'floor pan or under seats - do not cut through these areas' : 'unknown location - check vehicle diagrams'}` : 
+              `Fuel tank location for ${this.year} ${this.make}: ${hasFuel && vehicleAge < 10 ? 'Likely in rear undercarriage - avoid puncturing' : 'Confirm before cutting'}`,
+        `Seat belt cutting: Use trauma shears; be cautious of pretensioners which may deploy`,
+        `Foot pedal displacement: May need removal for leg access - ${isEV ? 'no hydraulic brake fluid to worry about' : 'watch for brake line rupture'}`,
+        hasFuel ? `Fuel system hazard: ${vehicleAge < 5 ? 'Modern vehicles have fuel shutoff switches; locate and disable' : 'Older vehicles may not have automatic shutoff - extreme caution'}` : '',
+        `Extrication through largest opening: Door removal often faster than complex technical cuts`,
+        hasFuel ? `Fire suppression ready: Have AFFF foam or CO2 apparatus staged for potential fuel ignition` : ``
+      ].filter(d => d)
+    });
+
+    // STEP 4: Door/Roof Removal Strategy
+    steps.push({
+      number: 4,
+      title: `Door & Roof Removal - ${this.make} ${this.model}`,
+      details: [
+        `Front door removal: ${vehicleAge < 10 ? 'Cut hinges and latch; hinge bolts typically 11-14mm' : 'Check hinge configuration; may vary from modern vehicles'}`,
+        `B-pillar cutting zone: Safe cut point is lower third to middle - avoid upper B-pillar which supports roof`,
+        `Side curtain airbags: Located along A and C pillars - maintain 18-24 inch clearance from roof rail`,
+        hasFuel ? `Fuel line proximity: ${vehicleAge < 3 ? 'Fuel rails run along floor; watch for pressurized lines when cutting floor pan' : ''}` : '',
+        isEV ? `High voltage main: Located under ${yearNum >= 2018 ? 'vehicle floor typically - DO NOT cut through' : 'seat area - confirm location before cutting'}` : '',
+        `Roof cutting: ${vehicleAge > 20 ? 'Older vehicles may have less reinforced roof - be prepared for roof collapse' : 'Modern rooflines are reinforced; may require dual-sided cuts'}`,
+        `Post-cut stabilization: Use airbags or jacks to support roof before personnel entry`
+      ].filter(d => d)
+    });
+
+    // STEP 5: Patient Extrication
+    steps.push({
+      number: 5,
+      title: `Patient Extrication from ${vehicleInfo}`,
+      details: [
+        `Spinal precautions: Use long backboard and KED; assume spinal injury until proven otherwise`,
+        `Exit route: Largest door opening preferred; use pre-positioned stretcher outside vehicle`,
+        `Package management: ${isEV ? 'Keep defibrillator away from HV cables/connections' : 'Use caution with electronic medical devices near unstable electrical system'}`,
+        `Lift coordination: Multiple rescuers for proper load distribution - never jerk or twist patient`,
+        `Final clearance check: Ensure no broken glass, sharp edges, or hanging metal sheets contact patient during removal`,
+        `Post-removal: Move to safe distance; do not leave vehicle unattended as fire risk may increase`
+      ]
+    });
+
+    // STEP 6: Hazard-Specific Final Steps
+    if (isEV || hasFuel || vehicleAge > 20) {
+      steps.push({
+        number: 6,
+        title: `Post-Extrication - Special Hazards for ${this.model || 'This Vehicle'}`,
+        details: [
+          isEV ? `Battery fire risk: ${yearNum >= 2020 ? 'Newer EV batteries can reignite hours after extrication. Keep fire watch active. Have EV-rated extinguisher (Class D) ready.' : 'Monitor for thermal runaway. Contact manufacturer for battery location and cooling protocols.'}` : '',
+          isEV ? `HV system still active: Warn all personnel - do not touch any orange/red colored cables or components` : '',
+          hasFuel ? `Fuel system containment: ${vehicleAge < 5 ? 'Modern vehicles have robust fuel shutoff. Still check for leaks. Fuel may be under pressure.' : 'Older vehicles may continue leaking. Deploy absorbent and establish hot zone.'}` : '',
+          vehicleAge > 20 ? `Asbestos hazard: ${vehicleAge} year old vehicle may contain brake pads, insulation, and gaskets with asbestos. Use respiratory protection if cutting.` : '',
+          hasFuel && vehicleAge < 3 ? `Direct injection hazard: Fuel injectors are extremely high pressure. Do not cut near fuel rail.` : '',
+          `Vehicle documentation: Obtain VIN and vehicle registration; alert towing service to hazards (EV? Fuel leak?)`,
+          `Incident documentation: Note all tools used, cuts made, and special hazards encountered for insurance and safety review`
+        ].filter(d => d)
+      });
+    }
+
+    return steps;
+  }
 }
