@@ -2,10 +2,12 @@
   "compileOnSave": false,
   "compilerOptions": {
     "outDir": "./out-tsc",
+    "rootDir": "./src",
     "sourceMap": true,
     "declaration": false,
     "module": "esnext",
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,

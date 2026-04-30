@@ -334,14 +334,57 @@ export class ResultsComponent implements OnInit {
     return key.replace(/([a-z])([A-Z])/g, '$1 $2');
   }
 
-  getVehicleModel(): string | null {
-    if (!this.nhtsaMapped) return null;
-    const item = this.nhtsaMapped.find(kv => kv.k === 'VehicleId');
-    return item ? String(item.v) : null;
-  }
-
   getFilteredRescueItems(): Array<{k:string;v:any}> {
     return this.rescueItems.filter(kv => this.displayValue(kv.v) !== 'N/A');
+  }
+
+  private findResolvedValue(source: any, patterns: string[]): string {
+    if (!source || typeof source !== 'object') return '';
+    const entries = Array.isArray(source)
+      ? source
+      : Object.keys(source).map(key => ({ key, value: source[key] }));
+
+    for (const entry of entries) {
+      const key = String((entry as any).key || '').toLowerCase();
+      const value = String((entry as any).value || '').trim();
+      if (!value || value.toLowerCase() === 'all') continue;
+      for (const pattern of patterns) {
+        if (key.includes(pattern) || value.toLowerCase().includes(pattern)) {
+          return value;
+        }
+      }
+    }
+    return '';
+  }
+
+  getResolvedYear(): string {
+    if (this.year && this.year !== 'All') return this.year;
+    const fromNhtsa = this.findResolvedValue(this.nhtsaMapped, ['year', 'modelyear', 'model year']);
+    if (fromNhtsa) return fromNhtsa;
+    const vinSource = Array.isArray(this.decodedVinResult?.Results)
+      ? this.decodedVinResult.Results[0]
+      : this.decodedVinResult;
+    return this.findResolvedValue(vinSource, ['year', 'modelyear', 'model year']);
+  }
+
+  getResolvedMake(): string {
+    if (this.make && this.make !== 'All') return this.make;
+    const fromNhtsa = this.findResolvedValue(this.nhtsaMapped, ['make', 'manufacturer', 'maker']);
+    if (fromNhtsa) return fromNhtsa;
+    const vinSource = Array.isArray(this.decodedVinResult?.Results)
+      ? this.decodedVinResult.Results[0]
+      : this.decodedVinResult;
+    return this.findResolvedValue(vinSource, ['make', 'manufacturer', 'manufacturername', 'vehiclemake']);
+  }
+
+  getResolvedModel(): string {
+    if (this.model && this.model !== 'All') return this.model;
+    const fromNhtsa = this.findResolvedValue(this.nhtsaMapped, ['model', 'modelname', 'vehicle model', 'vehicle']);
+    if (fromNhtsa) return fromNhtsa;
+    const vinSource = Array.isArray(this.decodedVinResult?.Results)
+      ? this.decodedVinResult.Results[0]
+      : this.decodedVinResult;
+    return this.findResolvedValue(vinSource, ['model', 'modelname', 'vehicle model', 'vehicle']);
   }
 
   getManufacturerUrl(make: string, model?: string): string {
@@ -390,6 +433,59 @@ export class ResultsComponent implements OnInit {
       return modelUrls[key];
     }
     return urls[makeLower] || '';
+  }
+
+  getRescueGuideUrl(make: string, model?: string): string {
+    if (!make || make.toLowerCase() === 'all') return '';
+    const makeLower = make.toLowerCase();
+    const modelLower = model ? model.toLowerCase().replace(/\s+/g, '-') : '';
+
+    const rescueUrls: { [key: string]: string } = {
+      'toyota': 'https://www.toyota.com/owners/resources',
+      'ford': 'https://www.ford.com/help/owner-support/',
+      'chevrolet': 'https://www.chevrolet.com/owner-center',
+      'honda': 'https://owners.honda.com/vehicles',
+      'nissan': 'https://www.nissanusa.com/owners.html',
+      'bmw': 'https://www.bmwusa.com/owners.html',
+      'mercedes-benz': 'https://www.mbusa.com/en/owners.html',
+      'hyundai': 'https://www.hyundaiusa.com/us/en/owning',
+      'kia': 'https://www.kia.com/us/en/owners.html',
+      'subaru': 'https://www.subaru.com/owners.html',
+      'volkswagen': 'https://www.vw.com/en/owners.html',
+      'audi': 'https://www.audiusa.com/us/web/en.html',
+      'lexus': 'https://www.lexus.com/owners',
+      'mazda': 'https://www.mazdausa.com/owners.html',
+      'tesla': 'https://www.tesla.com/support',
+      'dodge': 'https://www.dodge.com/owner',
+      'jeep': 'https://www.jeep.com/owner.html',
+      'gmc': 'https://www.gmc.com/owners.html',
+      'volvo': 'https://www.volvocars.com/us/support',
+      'mitsubishi': 'https://www.mitsubishicars.com/owners',
+      'chrysler': 'https://www.chrysler.com/owners.html',
+      'cadillac': 'https://www.cadillac.com/owners.html'
+    };
+
+    const modelUrls: { [key: string]: string } = {
+      'ford-f-150': 'https://www.fleet.ford.com/trucks/f-150/',
+      'ford-explorer': 'https://www.ford.com/suvs/explorer/',
+      'toyota-camry': 'https://www.toyota.com/camry/owners/',
+      'toyota-corolla': 'https://www.toyota.com/corolla/owners/',
+      'honda-civic': 'https://owners.honda.com/vehicles/2016/CIVIC',
+      'honda-accord': 'https://owners.honda.com/vehicles/2016/ACCORD',
+      // Add more model-specific URLs as needed
+    };
+
+    const modelKey = `${makeLower}-${modelLower}`;
+    if (modelUrls[modelKey]) {
+      return modelUrls[modelKey];
+    }
+
+    if (rescueUrls[makeLower]) {
+      return rescueUrls[makeLower];
+    }
+
+    const query = encodeURIComponent(`${make} ${model || ''} emergency response guide`);
+    return `https://www.google.com/search?q=${query}`;
   }
 
   // Parse decoded VIN result to extract airbag-related information into a summary
@@ -601,32 +697,75 @@ export class ResultsComponent implements OnInit {
 
   getVehicleDisplayName(): string {
     const parts: string[] = [];
-    if (this.year && this.year !== 'All') parts.push(this.year);
-    if (this.make && this.make !== 'All') parts.push(this.make);
-    if (this.model && this.model !== 'All') parts.push(this.model);
+    const year = this.getResolvedYear();
+    const make = this.getResolvedMake();
+    const model = this.getResolvedModel();
+    if (year) parts.push(year);
+    if (make) parts.push(make);
+    if (model) parts.push(model);
     return parts.length > 0 ? parts.join(' ') : 'Vehicle Information';
   }
 
-  isElectricVehicle(): boolean {
-    // Check if this is an electric or hybrid vehicle based on available data
-    const fuelTypes = ['electric', 'hybrid', 'battery', 'ev'];
-    const makeModel = `${this.make || ''} ${this.model || ''}`.toLowerCase();
+  private getExplicitFuelType(): string {
+    const fuelKeys = [
+      'fuel type - primary',
+      'fuel type primary',
+      'fueltypeprimary',
+      'fuel type - secondary',
+      'fuel type secondary',
+      'fueltypesecondary',
+      'fuel type',
+      'fueltype',
+      'engine fuel type',
+      'enginefueltype',
+      'fuel category',
+      'fuelcategory',
+      'engine description',
+      'fuel description'
+    ];
 
-    // Check decoded VIN data for fuel type
+    const sources: any[] = [];
+    if (this.nhtsaMapped && this.nhtsaMapped.length) sources.push(this.nhtsaMapped);
     if (this.decodedVinResult) {
       const vinData = Array.isArray(this.decodedVinResult.Results)
         ? this.decodedVinResult.Results[0]
         : this.decodedVinResult;
+      if (vinData && typeof vinData === 'object') sources.push(vinData);
+    }
 
-      for (const key in vinData) {
-        const value = String(vinData[key]).toLowerCase();
-        if (fuelTypes.some(type => value.includes(type))) {
-          return true;
+    for (const source of sources) {
+      if (Array.isArray(source)) {
+        for (const item of source) {
+          const key = String(item.k || '').toLowerCase();
+          const value = String(item.v || '').trim();
+          if (!value || value.toLowerCase() === 'all') continue;
+          if (fuelKeys.some(pattern => key.includes(pattern))) {
+            return value;
+          }
+        }
+      } else if (typeof source === 'object') {
+        for (const key of Object.keys(source)) {
+          const value = String(source[key] || '').trim();
+          if (!value || value.toLowerCase() === 'all') continue;
+          const lowerKey = key.toLowerCase();
+          if (fuelKeys.some(pattern => lowerKey.includes(pattern))) {
+            return value;
+          }
         }
       }
     }
 
-    // Check make/model for known EV brands
+    return '';
+  }
+
+  isElectricVehicle(): boolean {
+    const makeModel = `${this.getResolvedMake()} ${this.getResolvedModel()}`.toLowerCase();
+    const fuelType = this.getExplicitFuelType().toLowerCase();
+
+    if (fuelType) {
+      return /electric|battery|fuel cell/i.test(fuelType);
+    }
+
     const evBrands = ['tesla', 'rivian', 'lucid', 'polestar', 'vinfast'];
     if (evBrands.some(brand => makeModel.includes(brand))) {
       return true;
@@ -636,23 +775,11 @@ export class ResultsComponent implements OnInit {
   }
 
   hasFuelSystem(): boolean {
-    // Check if vehicle has traditional fuel system (gasoline/diesel)
-    const fuelTypes = ['gasoline', 'diesel', 'petrol', 'fuel', 'tank'];
-
-    if (this.decodedVinResult) {
-      const vinData = Array.isArray(this.decodedVinResult.Results)
-        ? this.decodedVinResult.Results[0]
-        : this.decodedVinResult;
-
-      for (const key in vinData) {
-        const value = String(vinData[key]).toLowerCase();
-        if (fuelTypes.some(type => value.includes(type))) {
-          return true;
-        }
-      }
+    const fuelType = this.getExplicitFuelType().toLowerCase();
+    if (fuelType) {
+      return /gasoline|diesel|petrol|cng|lpg|hybrid|flex fuel|ethanol|hydrogen|fuel cell/i.test(fuelType) && !/electric|battery/i.test(fuelType);
     }
 
-    // Assume most vehicles have fuel systems unless proven otherwise
     return !this.isElectricVehicle();
   }
 
@@ -671,16 +798,21 @@ export class ResultsComponent implements OnInit {
       details: string[];
     }> = [];
 
+    const make = this.getResolvedMake();
+    const model = this.getResolvedModel();
+    const year = this.getResolvedYear();
     const isEV = this.isElectricVehicle();
     const hasFuel = this.hasFuelSystem();
-    const yearNum = parseInt(this.year || '0', 10);
+    const yearNum = parseInt(year || '0', 10);
     const vehicleAge = new Date().getFullYear() - yearNum;
-    const vehicleInfo = `${this.year || 'Unknown'} ${this.make || ''} ${this.model || ''}`.trim();
+    const vehicleInfo = `${year || 'Unknown'} ${make || ''} ${model || ''}`.trim();
+    const safeMake = make || 'Vehicle';
+    const safeModel = model || 'Vehicle';
 
     // STEP 1: Initial Assessment
     steps.push({
       number: 1,
-      title: `Initial Assessment - ${vehicleInfo}`,
+      title: `Initial Assessment - ${vehicleInfo || 'Vehicle'}`,
       details: [
         `Scene safety: Check for downed power lines (hazard if ${isEV ? 'EV with damage' : 'standard vehicle'})`,
         `Vehicle position: Assess rollover risk and ground stability`,
@@ -696,7 +828,7 @@ export class ResultsComponent implements OnInit {
     // STEP 2: Gain Access
     steps.push({
       number: 2,
-      title: `Gain Access - ${this.make || 'Vehicle'} ${this.model || ''}`,
+      title: `Gain Access - ${safeMake} ${safeModel}`,
       details: [
         `Attempt all doors first: Check for manual override or mechanical release`,
         `Power locks: ${isEV ? 'May not function if battery is compromised' : 'Try locking mechanism; check for child safety locks'}`,
@@ -714,9 +846,9 @@ export class ResultsComponent implements OnInit {
       number: 3,
       title: `Disentanglement - ${vehicleInfo}`,
       details: [
-        `Dashboard/steering wheel removal: Needed for ${this.model || 'this vehicle'} to access trapped limbs`,
+        `Dashboard/steering wheel removal: Needed for ${safeModel || 'this vehicle'} to access trapped limbs`,
         isEV ? `Avoid cutting near battery housing: Battery typically in ${yearNum >= 2015 ? 'floor pan or under seats - do not cut through these areas' : 'unknown location - check vehicle diagrams'}` : 
-              `Fuel tank location for ${this.year} ${this.make}: ${hasFuel && vehicleAge < 10 ? 'Likely in rear undercarriage - avoid puncturing' : 'Confirm before cutting'}`,
+              `Fuel tank location for ${year || 'this vehicle'} ${make || ''}: ${hasFuel && vehicleAge < 10 ? 'Likely in rear undercarriage - avoid puncturing' : 'Confirm before cutting'}`,
         `Seat belt cutting: Use trauma shears; be cautious of pretensioners which may deploy`,
         `Foot pedal displacement: May need removal for leg access - ${isEV ? 'no hydraulic brake fluid to worry about' : 'watch for brake line rupture'}`,
         hasFuel ? `Fuel system hazard: ${vehicleAge < 5 ? 'Modern vehicles have fuel shutoff switches; locate and disable' : 'Older vehicles may not have automatic shutoff - extreme caution'}` : '',
@@ -728,7 +860,7 @@ export class ResultsComponent implements OnInit {
     // STEP 4: Door/Roof Removal Strategy
     steps.push({
       number: 4,
-      title: `Door & Roof Removal - ${this.make} ${this.model}`,
+      title: `Door & Roof Removal - ${safeMake} ${safeModel}`,
       details: [
         `Front door removal: ${vehicleAge < 10 ? 'Cut hinges and latch; hinge bolts typically 11-14mm' : 'Check hinge configuration; may vary from modern vehicles'}`,
         `B-pillar cutting zone: Safe cut point is lower third to middle - avoid upper B-pillar which supports roof`,
@@ -758,7 +890,7 @@ export class ResultsComponent implements OnInit {
     if (isEV || hasFuel || vehicleAge > 20) {
       steps.push({
         number: 6,
-        title: `Post-Extrication - Special Hazards for ${this.model || 'This Vehicle'}`,
+        title: `Post-Extrication - Special Hazards for ${safeModel || 'This Vehicle'}`,
         details: [
           isEV ? `Battery fire risk: ${yearNum >= 2020 ? 'Newer EV batteries can reignite hours after extrication. Keep fire watch active. Have EV-rated extinguisher (Class D) ready.' : 'Monitor for thermal runaway. Contact manufacturer for battery location and cooling protocols.'}` : '',
           isEV ? `HV system still active: Warn all personnel - do not touch any orange/red colored cables or components` : '',

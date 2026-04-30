@@ -239,7 +239,7 @@
 
           <!-- Step-by-Step Extrication Procedures - Vehicle Specific -->
           <div class="rescue-section">
-            <h3>📋 {{year}} {{make}} {{model}} - Specific Extrication Procedures</h3>
+            <h3>📋 {{ getVehicleDisplayName() }} - Specific Extrication Procedures</h3>
             <div class="procedure-steps">
               <div class="step" *ngFor="let procedureStep of getVehicleSpecificSteps()">
                 <div class="step-number">{{procedureStep.number}}</div>
@@ -301,10 +301,13 @@
             <div class="resources-grid">
               <div class="resource-card">
                 <h4>Manufacturer Support</h4>
-                <p>Contact {{make}} technical support for specific vehicle rescue procedures</p>
-                <div *ngIf="getManufacturerUrl(make, getVehicleModel())" class="resource-link">
-                  <a [href]="getManufacturerUrl(make, getVehicleModel())" target="_blank">
-                    Visit {{make}} Resources →
+                <p>Contact {{getResolvedMake() || make}} technical support for specific vehicle rescue procedures</p>
+                <div class="resource-actions">
+                  <a *ngIf="getManufacturerUrl(getResolvedMake(), getResolvedModel())" [href]="getManufacturerUrl(getResolvedMake(), getResolvedModel())" target="_blank" class="resource-link">
+                    Visit {{getResolvedMake() || make}} Resources →
+                  </a>
+                  <a *ngIf="getRescueGuideUrl(getResolvedMake(), getResolvedModel())" [href]="getRescueGuideUrl(getResolvedMake(), getResolvedModel())" target="_blank" class="resource-link rescue-guide-btn">
+                    Open Rescue Guide →
                   </a>
                 </div>
               </div>
